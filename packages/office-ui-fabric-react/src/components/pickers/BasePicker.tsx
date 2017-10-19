@@ -282,7 +282,43 @@ export class BasePicker<T, P extends IBasePickerProps<T>> extends BaseComponent<
 
   protected updateValue(updatedValue: string) {
     let suggestions: T[] | PromiseLike<T[]> = this.props.onResolveSuggestions(updatedValue, this.state.items);
-    this.updateSuggestionsList(suggestions, updatedValue);
+
+    if (this.props.multiItemResolve) {
+      if (Array.isArray(suggestions)) {
+        if (suggestions.length > 0) {
+          this.addItem(suggestions[0]);
+          this.input.clear();
+        }
+      } else if (suggestions && suggestions.then) {
+        if (!this.loadingTimer) {
+          this.loadingTimer = this._async.setTimeout(() => this.setState({
+            suggestionsLoading: true
+          }), 500);
+        }
+
+        // Ensure that the promise will only use the callback if it was the most recent one.
+        let promise: PromiseLike<T[]> = this.currentPromise = suggestions;
+        promise.then((newSuggestions: T[]) => {
+          if (promise === this.currentPromise) {
+            if (newSuggestions.length > 0) {
+              this.addItem(newSuggestions[0]);
+              this.input.clear();
+            }
+
+            this.setState({
+              suggestionsLoading: false
+            });
+
+            if (this.loadingTimer) {
+              this._async.clearTimeout(this.loadingTimer);
+              this.loadingTimer = undefined;
+            }
+          }
+        });
+      }
+    } else {
+      this.updateSuggestionsList(suggestions, updatedValue);
+    }
   }
 
   protected updateSuggestionsList(suggestions: T[] | PromiseLike<T[]>, updatedValue?: string) {

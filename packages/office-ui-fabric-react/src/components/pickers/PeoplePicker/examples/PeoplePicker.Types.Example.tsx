@@ -173,6 +173,7 @@ export class PeoplePickerTypesExample extends BaseComponent<any, IPeoplePickerEx
           'aria-label': 'People Picker'
         } }
         componentRef={ this._resolveRef('_picker') }
+        multiItemResolve={ true }
       />
     );
   }
